@@ -205,3 +205,85 @@ ModelBT <- train(x = xTrain, y = yTrain,
                          trControl = ctrl)
 
 ModelBT #Accuracy = .74, Kappa = .18
+
+
+
+
+
+
+
+### Neural Networks: Example with Categorical Response at Two Levels ###
+
+## Min-Max Normalization ##
+dataFinal$PRE4 <- (dataFinal$PRE4 - min(dataFinal$PRE4))/(max(dataFinal$PRE4) - min(dataFinal$PRE4))
+dataFinal$PRE5 <- (dataFinal$PRE5 - min(dataFinal$PRE5))/(max(dataFinal$PRE5) - min(dataFinal$PRE5))
+dataFinal$PRE7 <- (dataFinal$PRE7 - min(dataFinal$PRE7))/(max(dataFinal$PRE7) - min(dataFinal$PRE7))
+dataFinal$PRE8 <- (dataFinal$PRE8 - min(dataFinal$PRE8))/(max(dataFinal$PRE8) - min(dataFinal$PRE8))
+dataFinal$PRE9 <- (dataFinal$PRE9 - min(dataFinal$PRE9))/(max(dataFinal$PRE9) - min(dataFinal$PRE9))
+dataFinal$PRE10 <- (dataFinal$PRE10 - min(dataFinal$PRE10))/(max(dataFinal$PRE10) - min(dataFinal$PRE10))
+dataFinal$PRE11 <- (dataFinal$PRE11 - min(dataFinal$PRE11))/(max(dataFinal$PRE11) - min(dataFinal$PRE11))
+dataFinal$PRE17 <- (dataFinal$PRE17 - min(dataFinal$PRE17))/(max(dataFinal$PRE17) - min(dataFinal$PRE17))
+dataFinal$PRE19 <- (dataFinal$PRE19 - min(dataFinal$PRE19))/(max(dataFinal$PRE19) - min(dataFinal$PRE19))
+dataFinal$PRE25 <- (dataFinal$PRE25 - min(dataFinal$PRE25))/(max(dataFinal$PRE25) - min(dataFinal$PRE25))
+dataFinal$PRE30 <- (dataFinal$PRE30 - min(dataFinal$PRE30))/(max(dataFinal$PRE30) - min(dataFinal$PRE30))
+dataFinal$PRE32 <- (dataFinal$PRE32 - min(dataFinal$PRE32))/(max(dataFinal$PRE32) - min(dataFinal$PRE32))
+dataFinal$AGE <- (dataFinal$AGE - min(dataFinal$AGE))/(max(dataFinal$AGE) - min(dataFinal$AGE))
+
+## Data Partition ##
+set.seed(seed)
+ind <- sample(2,nrow(dataFinal), replace = TRUE, prob = c(0.8, 0.2))
+training <- dataFinal[ind==1,]
+testing <- dataFinal[ind==2,]
+
+## Neural Networks ##
+library(neuralnet)
+set.seed(seed)
+n <- neuralnet(Risk1Yr~AGE+PRE4+PRE5+PRE7+PRE8+PRE9+PRE10+PRE11+PRE17+PRE19+PRE25+PRE30+PRE32,
+               data = training,
+               hidden = 1,
+               err.fct = "ce",
+               linear.output = FALSE,
+               lifesign = 'full',
+               algorithm = "rprop+"
+               )
+plot(n)
+
+## Prediction ##
+
+output <- compute(n, training[,-17])
+output
+head(output$net.result)
+head(training[1,])
+
+## Node Output Calculations with Sigmoid Activation Funtion ##
+in14 <- -1.24168 + (-1.18182*0.4032922) + (32.88539*0.01078041) + (-1.24769*0) + (0.02539*0) + (-28.12965*0) + (-0.15854*0) + (-0.37519*0) + (-1.83694*0) + (0.57395*0) + (66.73049*0) + (-0.66428*1) + (38.72126*0) + (-0.03061*.4545455)
+in14
+
+out14 <- 1/(1+exp(-in14))
+out14
+
+in15 <- -0.57596 + (-10.19008*out14)
+in15
+
+out15 <- 1/(1+exp(-in15))
+out15
+
+in16 <- 0.57627 + (10.18588*out14)
+in16
+
+out16 <- 1/(1+exp(-in16))
+out16
+
+## Confusion Matrix & Misclassication Error - training data ##
+output <- compute(n, training[,-17])
+p1 <- output$net.result
+pred1 <- ifelse(p1>0.5, 1, 0)
+tab1 <- table(pred1, training$Risk1Yr)
+tab1
+
+## Confusion Matrix & Misclassication Error - testing data ##
+output2 <- compute(n, training[,-17])
+p2 <- output$net.result
+pred2 <- ifelse(p2>0.5, 1, 0)
+tab2 <- table(pred2, training$Risk1Yr)
+tab2
